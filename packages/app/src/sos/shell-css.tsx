@@ -4,7 +4,7 @@ import { isWeb } from "@/constants/platform";
 import { deriveIdentityColorName, identityColor } from "@/styles/identity-colors";
 import type { Theme } from "@/styles/theme";
 import { mixHex } from "./color";
-import { SOS_ISLAND_RADIUS } from "./metrics";
+import { SOS_ISLAND_RADIUS, SOS_TOOLBAR_HEIGHT } from "./metrics";
 
 // SOS: JetBrains density for upstream screens the shell does not own. Every selector keys on
 // upstream `data-testid` / ARIA attributes under `[data-sos-shell]`, never on component code or
@@ -35,8 +35,11 @@ const FOCUSED_STRIPE = `${WORKSPACES_FOCUSED} [data-sos-stripe="workspaces"][dat
 ${EXPLORER_FOCUSED} [data-sos-stripe="explorer"][data-sos-stripe-active="true"]`;
 
 const RULES = `
+/* Upstream panes paint the frame color as opaque squares behind the islands, so the glow stays
+   inside the toolbar band; past it, it would outline those squares at the island corners. */
 [data-sos-shell] {
-  background-image: radial-gradient(760px 90px at 170px 0, var(--sos-project-glow), transparent);
+  background-image: radial-gradient(760px 46px at 170px 0, var(--sos-project-glow), transparent);
+  background-size: 100% ${SOS_TOOLBAR_HEIGHT}px;
   background-repeat: no-repeat;
 }
 
