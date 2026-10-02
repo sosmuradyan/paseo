@@ -39,8 +39,8 @@ mac:
   minimumSystemVersion: "13.0.0"
   category: public.app-category.developer-tools
   icon: assets/icon.icns
+  # CFBundleName must stay "Paseo": Electron finds "<CFBundleName> Helper.app" by it.
   extendInfo:
-    CFBundleName: Paseo Sos
     CFBundleDisplayName: Paseo Sos
   hardenedRuntime: true
   notarize: true
