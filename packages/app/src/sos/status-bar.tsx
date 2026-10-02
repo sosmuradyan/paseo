@@ -1,7 +1,7 @@
 import { ChevronRight, GitBranch, Server } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ProjectIconView } from "@/components/project-icon-view";
 import { getProviderIcon } from "@/components/provider-icons";
 import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
@@ -73,7 +73,7 @@ export function SosStatusBar() {
           <>
             <ThemedChevronRight size={12} uniProps={extraMutedIcon} />
             <View style={styles.crumbItem}>
-              <AgentCrumbIcon provider={agent.provider} serverId={serverId} />
+              <AgentCrumbIcon provider={agent.provider} serverId={serverId} uniProps={mutedIcon} />
               <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
                 {agent.title || "New agent"}
               </Text>
@@ -119,11 +119,20 @@ function useSosFocusedAgent(serverId: string | null, workspaceKey: string | null
   return { title: agent.title, status: agent.status, provider: agent.provider, startedAt };
 }
 
-function AgentCrumbIcon({ provider, serverId }: { provider: string; serverId: string | null }) {
-  const { theme } = useUnistyles();
+function AgentCrumbIconBase({
+  provider,
+  serverId,
+  color,
+}: {
+  provider: string;
+  serverId: string | null;
+  color?: string;
+}) {
   const Icon = getProviderIcon(provider, serverId);
-  return <Icon size={12} color={theme.colors.foregroundMuted} />;
+  return <Icon size={12} color={color ?? "currentColor"} />;
 }
+
+const AgentCrumbIcon = withUnistyles(AgentCrumbIconBase);
 
 function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));

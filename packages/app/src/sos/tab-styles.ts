@@ -1,5 +1,4 @@
 import { StyleSheet } from "react-native-unistyles";
-import { mixHex } from "./color";
 import { useSosShellEnabled } from "./shell-enabled";
 
 // SOS: JetBrains Islands editor tabs: the selected tab is a bordered pill, accent-tinted while
@@ -14,10 +13,11 @@ const tabStyles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface2,
     borderColor: theme.colors.border,
   },
-  // Islands Dark: #283456 fill, #384C85 border over the #191A1C island.
+  // Islands Dark: #283456 fill, #384C85 border over the #191A1C island. CSS color-mix,
+  // because on web the theme colors reach the stylesheet as CSS variables.
   activeFocused: {
-    backgroundColor: mixHex(theme.colors.surface0, theme.colors.accent, 0.27),
-    borderColor: mixHex(theme.colors.surface0, theme.colors.accent, 0.5),
+    backgroundColor: `color-mix(in srgb, ${theme.colors.accent} 27%, ${theme.colors.surface0})`,
+    borderColor: `color-mix(in srgb, ${theme.colors.accent} 50%, ${theme.colors.surface0})`,
   },
 }));
 
