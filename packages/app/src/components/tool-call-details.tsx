@@ -46,7 +46,6 @@ interface DetailStyles {
   scrollAreaFillStyle: StyleProp<ViewStyle>;
   scrollAreaStyle: StyleProp<ViewStyle>;
   jsonScrollCombined: StyleProp<ViewStyle>;
-  jsonScrollErrorCombined: StyleProp<ViewStyle>;
   fullBleedContainerStyle: StyleProp<ViewStyle>;
   loadingContainerStyle: StyleProp<ViewStyle>;
   resolvedMaxHeight: number | undefined;
@@ -108,7 +107,6 @@ function useDetailStyles(
     [resolvedMaxHeight],
   );
   const jsonScrollCombined = styles.jsonScroll;
-  const jsonScrollErrorCombined = [styles.jsonScroll, styles.jsonScrollError];
   const fullBleedContainerStyle = useMemo(
     () => [
       isFullBleed ? styles.fullBleedContainer : styles.paddedContainer,
@@ -128,7 +126,6 @@ function useDetailStyles(
     scrollAreaFillStyle,
     scrollAreaStyle,
     jsonScrollCombined,
-    jsonScrollErrorCombined,
     fullBleedContainerStyle,
     loadingContainerStyle,
     resolvedMaxHeight,
@@ -601,13 +598,10 @@ function buildUnknownSections(detail: UnknownDetail, ds: DetailStyles, t: TFunct
     if (!value.length) {
       continue;
     }
-    out.push(
-      <View key={`${section.title}-header`} style={styles.groupHeader}>
-        <Text style={styles.groupHeaderText}>{section.title}</Text>
-      </View>,
-    );
+    // sos: the caption sits right on top of its code well instead of in a bordered strip.
     out.push(
       <View key={`${section.title}-value`} style={styles.section}>
+        <Text style={styles.groupHeaderText}>{section.title}</Text>
         <ScrollView
           horizontal
           nestedScrollEnabled
@@ -742,13 +736,14 @@ function buildDetailSections(
 
 function ErrorSection({ errorText, ds }: { errorText: string; ds: DetailStyles }) {
   const { t } = useTranslation();
+  // sos: full-bleed details (shell, edit) have no container padding, so the error pads itself.
   return (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, styles.errorText]}>{t("toolCallDetails.error")}</Text>
+    <View style={[styles.section, ds.isFullBleed && styles.fullBleedInset]}>
+      <Text style={[styles.groupHeaderText, styles.errorText]}>{t("toolCallDetails.error")}</Text>
       <ScrollView
         horizontal
         nestedScrollEnabled
-        style={ds.jsonScrollErrorCombined}
+        style={ds.jsonScrollCombined}
         contentContainerStyle={styles.jsonContent}
         showsHorizontalScrollIndicator={true}
       >
@@ -809,34 +804,25 @@ const styles = StyleSheet.create((theme) => {
   const insets = getCodeInsets(theme);
 
   return {
+    // sos: one card tone (surface1) with code in darker surface0 wells, all on a 12px inset.
     paddedContainer: {
-      gap: theme.spacing[4],
-      padding: 0,
+      gap: theme.spacing[3],
+      padding: theme.spacing[3],
+    },
+    fullBleedInset: {
+      padding: theme.spacing[3],
     },
     fullBleedContainer: {
       gap: theme.spacing[2],
       padding: 0,
     },
-    groupHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing[2],
-      paddingHorizontal: theme.spacing[3],
-      paddingVertical: theme.spacing[2],
-      borderBottomWidth: theme.borderWidth[1],
-      borderBottomColor: theme.colors.border,
-    },
     groupHeaderText: {
       color: theme.colors.foregroundMuted,
-      fontSize: theme.fontSize.base,
-      fontWeight: theme.fontWeight.normal,
+      fontSize: theme.fontSize.sm,
+      fontWeight: theme.fontWeight.medium,
     },
     paseoSection: {
       gap: theme.spacing[3],
-      paddingHorizontal: theme.spacing[4],
-      paddingVertical: theme.spacing[4],
-      borderBottomWidth: theme.borderWidth[1],
-      borderBottomColor: theme.colors.border,
     },
     paseoSectionTitle: {
       color: theme.colors.foreground,
@@ -872,7 +858,7 @@ const styles = StyleSheet.create((theme) => {
       overflowWrap: "anywhere",
     },
     section: {
-      gap: theme.spacing[2],
+      gap: 6,
     },
     fillHeight: {
       flex: 1,
@@ -885,29 +871,20 @@ const styles = StyleSheet.create((theme) => {
       lineHeight: 22,
       overflowWrap: "anywhere",
     },
-    sectionTitle: {
-      color: theme.colors.foregroundMuted,
-      fontSize: theme.fontSize.sm,
-      fontWeight: theme.fontWeight.semibold,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-    },
     rangeText: {
       color: theme.colors.foregroundMuted,
       fontSize: theme.fontSize.sm,
     },
     diffContainer: {
-      borderWidth: theme.borderWidth[1],
-      borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.base,
+      borderRadius: theme.borderRadius.md,
       overflow: "hidden",
-      backgroundColor: theme.colors.surface2,
+      backgroundColor: theme.colors.surface0,
     },
     fullBleedBlock: {
       borderWidth: 0,
       borderRadius: 0,
       overflow: "hidden",
-      backgroundColor: theme.colors.surface1,
+      backgroundColor: theme.colors.surface0,
     },
     codeVerticalScroll: {},
     codeVerticalContent: {
@@ -923,10 +900,8 @@ const styles = StyleSheet.create((theme) => {
       paddingVertical: insets.padding,
     },
     scrollArea: {
-      borderWidth: theme.borderWidth[1],
-      borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.base,
-      backgroundColor: theme.colors.surface2,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface0,
     },
     scrollContent: {
       padding: insets.padding,
@@ -987,13 +962,8 @@ const styles = StyleSheet.create((theme) => {
       lineHeight: 18,
     },
     jsonScroll: {
-      borderWidth: theme.borderWidth[1],
-      borderColor: theme.colors.border,
-      borderRadius: theme.borderRadius.base,
-      backgroundColor: theme.colors.surface2,
-    },
-    jsonScrollError: {
-      borderColor: theme.colors.destructive,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface0,
     },
     jsonContent: {
       padding: insets.padding,

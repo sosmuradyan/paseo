@@ -1191,6 +1191,11 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   containerLastInSequence: {
     marginBottom: theme.spacing[4],
   },
+  // sos: an opened card gets air above and below so stacked cards don't fuse into one slab.
+  containerExpanded: {
+    marginTop: theme.spacing[2],
+    marginBottom: theme.spacing[3],
+  },
   pressable: {
     borderRadius: theme.borderRadius.lg,
     borderWidth: theme.borderWidth[1],
@@ -1277,6 +1282,8 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     borderWidth: theme.borderWidth[1],
     borderTopWidth: 0,
     borderColor: theme.colors.border,
+    // sos: body shares the header's tone; code sits in darker surface0 wells inside it.
+    backgroundColor: theme.colors.surface1,
     padding: 0,
     gap: 0,
     flexShrink: 1,
@@ -1294,6 +1301,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   },
   detailWrapperBorderless: {
     borderWidth: 0,
+    backgroundColor: "transparent",
   },
   shimmerOverlay: {
     position: "absolute",
@@ -2953,9 +2961,10 @@ export const ExpandableBadge = memo(function ExpandableBadge({
         (isLastInSequence
           ? expandableBadgeStylesheet.containerLastInSequence
           : expandableBadgeStylesheet.containerSpacing),
+      !resolvedDisableOuterSpacing && isExpanded && expandableBadgeStylesheet.containerExpanded,
       style,
     ],
-    [isLastInSequence, resolvedDisableOuterSpacing, style],
+    [isExpanded, isLastInSequence, resolvedDisableOuterSpacing, style],
   );
 
   const pressableStyle = useMemo(
