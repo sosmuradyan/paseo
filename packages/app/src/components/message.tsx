@@ -56,6 +56,7 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
+import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import { MarkdownRenderer, type MarkdownStyles } from "@/components/markdown/renderer";
 import type { TaskActivity, TodoEntry, UserMessageImageAttachment } from "@/types/stream";
 import type { AgentAttachment } from "@getpaseo/protocol/messages";
@@ -2424,6 +2425,8 @@ interface ExpandableBadgeProps {
 interface ExpandableBadgeSecondaryLabelProps {
   secondaryLabel?: string;
   secondaryLabelStyle: StyleProp<TextStyle>;
+  /** Code-surface tag so the app-wide UI font rule leaves the mono font alone. */
+  secondaryDataSet?: typeof CODE_SURFACE_DATASET;
   shouldMeasureWebShimmer: boolean;
   onSecondaryLayout: (event: LayoutChangeEvent) => void;
 }
@@ -2431,6 +2434,7 @@ interface ExpandableBadgeSecondaryLabelProps {
 function ExpandableBadgeSecondaryLabel({
   secondaryLabel,
   secondaryLabelStyle,
+  secondaryDataSet,
   shouldMeasureWebShimmer,
   onSecondaryLayout,
 }: ExpandableBadgeSecondaryLabelProps) {
@@ -2440,6 +2444,7 @@ function ExpandableBadgeSecondaryLabel({
   return (
     <Text
       style={secondaryLabelStyle}
+      dataSet={secondaryDataSet}
       numberOfLines={1}
       onLayout={shouldMeasureWebShimmer ? onSecondaryLayout : undefined}
     >
@@ -2451,6 +2456,7 @@ function ExpandableBadgeSecondaryLabel({
 interface ExpandableBadgeWebShimmerOverlayProps {
   label: string;
   secondaryLabel?: string;
+  secondaryDataSet?: typeof CODE_SURFACE_DATASET;
   shimmerLabelTextStyle: StyleProp<TextStyle>;
   shimmerSecondaryTextStyle: StyleProp<TextStyle>;
   showOpenFileButton: boolean;
@@ -2459,6 +2465,7 @@ interface ExpandableBadgeWebShimmerOverlayProps {
 function ExpandableBadgeWebShimmerOverlay({
   label,
   secondaryLabel,
+  secondaryDataSet,
   shimmerLabelTextStyle,
   shimmerSecondaryTextStyle,
   showOpenFileButton,
@@ -2469,7 +2476,7 @@ function ExpandableBadgeWebShimmerOverlay({
         {label}
       </Text>
       {secondaryLabel ? (
-        <Text style={shimmerSecondaryTextStyle} numberOfLines={1}>
+        <Text style={shimmerSecondaryTextStyle} numberOfLines={1} dataSet={secondaryDataSet}>
           {secondaryLabel}
         </Text>
       ) : null}
@@ -2490,6 +2497,7 @@ interface ExpandableBadgeLabelRowProps {
   labelStyle: StyleProp<TextStyle>;
   secondaryLabel?: string;
   secondaryLabelStyle: StyleProp<TextStyle>;
+  secondaryDataSet?: typeof CODE_SURFACE_DATASET;
   shouldMeasureWebShimmer: boolean;
   shouldMeasureNativeShimmer: boolean;
   isWebShimmer: boolean;
@@ -2516,6 +2524,7 @@ function ExpandableBadgeLabelRow({
   labelStyle,
   secondaryLabel,
   secondaryLabelStyle,
+  secondaryDataSet,
   shouldMeasureWebShimmer,
   shouldMeasureNativeShimmer,
   isWebShimmer,
@@ -2552,6 +2561,7 @@ function ExpandableBadgeLabelRow({
       <ExpandableBadgeSecondaryLabel
         secondaryLabel={secondaryLabel}
         secondaryLabelStyle={secondaryLabelStyle}
+        secondaryDataSet={secondaryDataSet}
         shouldMeasureWebShimmer={shouldMeasureWebShimmer}
         onSecondaryLayout={onSecondaryLayout}
       />
@@ -2576,6 +2586,7 @@ function ExpandableBadgeLabelRow({
         <ExpandableBadgeWebShimmerOverlay
           label={label}
           secondaryLabel={secondaryLabel}
+          secondaryDataSet={secondaryDataSet}
           shimmerLabelTextStyle={shimmerLabelTextStyle}
           shimmerSecondaryTextStyle={shimmerSecondaryTextStyle}
           showOpenFileButton={showOpenFileButton}
@@ -3058,6 +3069,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
             labelStyle={labelStyle}
             secondaryLabel={secondaryLabel}
             secondaryLabelStyle={secondaryLabelStyle}
+            secondaryDataSet={monospaceSecondary ? CODE_SURFACE_DATASET : undefined}
             shouldMeasureWebShimmer={shouldMeasureWebShimmer}
             shouldMeasureNativeShimmer={shouldMeasureNativeShimmer}
             isWebShimmer={isWebShimmer}
