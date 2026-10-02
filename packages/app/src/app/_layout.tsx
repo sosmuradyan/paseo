@@ -34,6 +34,9 @@ import { ChangelogHost } from "@/changelog";
 import { AppDiagnosticHost } from "@/components/app-diagnostic-host";
 import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary";
 import { LeftSidebar } from "@/components/left-sidebar";
+import { SosIsland } from "@/sos/island";
+import { SosShell } from "@/sos/shell";
+import { useSosShellEnabled } from "@/sos/shell-enabled";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
@@ -474,6 +477,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   }, [settings.theme, updateSettings]);
 
   const isCompactLayout = useIsCompactFormFactor();
+  const sosShellEnabled = useSosShellEnabled();
   const explorerSidebarPresentation = resolveExplorerSidebarPresentation({
     isCompact: isCompactLayout,
   });
@@ -551,7 +555,10 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     <View style={rowStyle}>
       {!isCompactLayout ? (
         <WindowChromeRegion corners={appChromeLayout.sidebarCorners}>
-          {themedSidebarChrome}
+          {/* SOS: island around the sidebar when the WebStorm shell is on */}
+          <SosIsland visible={desktopSidebarVisible} trailingGap>
+            {themedSidebarChrome}
+          </SosIsland>
         </WindowChromeRegion>
       ) : null}
       {usesCompactExplorerHost ? (
@@ -565,7 +572,9 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
         </CompactExplorerSidebarHost>
       ) : (
         <WindowChromeRegion corners={appChromeLayout.contentCorners}>
-          <View style={flexStyle}>{children}</View>
+          <SosIsland grow bare={isWorkspaceRoute}>
+            <View style={flexStyle}>{children}</View>
+          </SosIsland>
         </WindowChromeRegion>
       )}
     </View>
@@ -575,9 +584,10 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   // Their tracked styles update in place; web numeric styles still need remounting.
   const surface = (
     <View style={layoutStyles.surfaceFill}>
-      {workspaceChrome}
+      {/* SOS: WebStorm shell (toolbar, tool-window stripes, status bar) */}
+      {sosShellEnabled ? <SosShell>{workspaceChrome}</SosShell> : workspaceChrome}
       <AppearanceStyleBoundary>
-        {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
+        {!isCompactLayout && !sosShellEnabled && appChromeLayout.sidebarToggleOwner === "window" ? (
           <WindowChromeRegion corners="top-left">
             <WindowChromeSafeArea
               placement="inline"

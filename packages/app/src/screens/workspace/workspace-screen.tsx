@@ -26,6 +26,7 @@ import type { Theme } from "@/styles/theme";
 import invariant from "tiny-invariant";
 import { SidebarMenuToggle } from "@/components/headers/menu-header";
 import { ScreenHeader } from "@/components/headers/screen-header";
+import { SosWorkspaceHeader } from "@/sos/header-slot";
 import { ScreenTitle } from "@/components/headers/screen-title";
 import { HostBadge } from "@/hosts/host-badge";
 import { useHostBadges } from "@/hosts/use-host-badges";
@@ -3881,7 +3882,9 @@ function WorkspaceScreenContent({
   const renderWorkspaceScreenHeader = useCallback(
     () =>
       showScreenHeader ? (
-        <ScreenHeader
+        // SOS: with the WebStorm shell on, this header renders inside the main toolbar.
+        <SosWorkspaceHeader
+          active={isRouteFocused}
           left={
             <>
               <SidebarMenuToggle />
@@ -3934,6 +3937,7 @@ function WorkspaceScreenContent({
       handleViewScriptTerminal,
       headerRight,
       isMobile,
+      isRouteFocused,
       isWorkspaceHeaderLoading,
       liveTerminalIds,
       normalizedServerId,

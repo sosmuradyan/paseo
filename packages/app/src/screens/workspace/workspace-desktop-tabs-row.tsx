@@ -78,6 +78,7 @@ import {
   ToolbarControls,
 } from "@/components/ui/pane-content-toolbar";
 import { smallIconButtonChromeFrameSize } from "@/components/ui/icon-button-chrome";
+import { useSosTabStyles } from "@/sos/tab-styles";
 import {
   HorizontalScrollBoundaryShades,
   useHorizontalScrollBoundary,
@@ -767,12 +768,15 @@ function TabChip({
       } as const)
     : undefined;
 
+  const sosTabStyles = useSosTabStyles();
   const tabChipStyle = useCallback(
     () => [
       styles.tab,
       isActiveFocused && styles.tabActive,
       isActive && !isFocused && styles.tabActiveUnfocused,
       !isActive && isHovered && styles.tabHovered,
+      isActive && sosTabStyles?.active, // SOS: JetBrains tab selection
+      isActiveFocused && sosTabStyles?.activeFocused,
       isWeb && isDragging && ({ cursor: "grabbing" } as object),
       {
         minWidth: resolvedTabWidth,
@@ -780,7 +784,7 @@ function TabChip({
         maxWidth: resolvedTabWidth,
       },
     ],
-    [isActive, isActiveFocused, isDragging, isFocused, isHovered, resolvedTabWidth],
+    [isActive, isActiveFocused, isDragging, isFocused, isHovered, resolvedTabWidth, sosTabStyles],
   );
 
   const handleTabPointerEnter = useCallback(() => {

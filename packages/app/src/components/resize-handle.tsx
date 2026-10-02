@@ -19,6 +19,8 @@ export interface ResizeHandleProps {
   containerSize: number;
   onPreviewResizeSplit: (groupId: string, sizes: number[]) => void;
   onResizeSplit: (groupId: string, sizes: number[]) => void;
+  /** SOS: the WebStorm shell draws a frame gap instead of the 1px line. */
+  hideLine?: boolean;
 }
 
 interface PointerState {
@@ -45,6 +47,7 @@ export function ResizeHandle({
   containerSize,
   onPreviewResizeSplit,
   onResizeSplit,
+  hideLine = false,
 }: ResizeHandleProps) {
   const { theme } = useUnistyles();
   const finePointer = useHasFinePointer();
@@ -198,9 +201,9 @@ export function ResizeHandle({
     () => [
       styles.handle,
       direction === "horizontal" ? styles.handleHorizontal : styles.handleVertical,
-      { backgroundColor: theme.colors.border },
+      { backgroundColor: hideLine ? "transparent" : theme.colors.border },
     ],
-    [direction, theme.colors.border],
+    [direction, hideLine, theme.colors.border],
   );
   const highlightStyle = useMemo(
     () => [

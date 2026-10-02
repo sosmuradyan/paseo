@@ -91,6 +91,7 @@ import type { WorkspaceTab } from "@/workspace-tabs/model";
 import { RenderProfile } from "@/utils/render-profiler";
 import { isNative } from "@/constants/platform";
 import { panelTargetSupportsHost } from "@/plugins/workspace-panels/locations";
+import { useSosPaneIslandStyles } from "@/sos/island";
 
 interface SplitContainerProps {
   layout: WorkspaceLayout;
@@ -445,10 +446,19 @@ export function SplitContainer({
   const mainColumnWindowChromeCorners = renderExplorerSidebarDock
     ? removeWindowChromeCorner(inheritedWindowChromeCorners, "top-right")
     : inheritedWindowChromeCorners;
-  const mainColumnStyle = styles.mainColumn;
+  // SOS: with the WebStorm shell on, the main column and Explorer are separate islands.
+  const sosPaneIslands = useSosPaneIslandStyles();
+  const mainColumnStyle = sosPaneIslands
+    ? [styles.mainColumn, sosPaneIslands.island]
+    : styles.mainColumn;
   const explorerSidebarDockStyle = useMemo(
-    () => [styles.explorerSidebarDock, { width: explorerSidebarWidth }],
-    [explorerSidebarWidth],
+    () => [
+      styles.explorerSidebarDock,
+      sosPaneIslands?.island,
+      sosPaneIslands?.trailingIsland,
+      { width: explorerSidebarWidth },
+    ],
+    [explorerSidebarWidth, sosPaneIslands],
   );
   const handleWorkspaceShellLayout = useCallback((event: LayoutChangeEvent) => {
     const nextWidth = event.nativeEvent.layout.width;
@@ -653,7 +663,10 @@ export function SplitContainer({
         onDragCancel={handleDragCancel}
         onDragEnd={handleDragEnd}
       >
-        <View style={styles.workspaceShell} onLayout={handleWorkspaceShellLayout}>
+        <View
+          style={[styles.workspaceShell, sosPaneIslands?.frame]}
+          onLayout={handleWorkspaceShellLayout}
+        >
           <WindowChromeRegion corners={mainColumnWindowChromeCorners}>
             <View style={mainColumnStyle}>
               {renderMainHeader?.()}
@@ -706,6 +719,7 @@ export function SplitContainer({
             <>
               <ResizeHandle
                 testID="workspace-explorer-sidebar-resize-handle"
+                hideLine={sosPaneIslands !== null}
                 direction="horizontal"
                 hitAreaAlignment="end"
                 groupId={EXPLORER_SIDEBAR_RESIZE_GROUP_ID}
