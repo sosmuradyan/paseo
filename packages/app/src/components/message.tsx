@@ -325,6 +325,11 @@ function shouldStopDetailWheelPropagation(detailRoot: HTMLElement, event: WheelE
   return canScrollHorizontally;
 }
 
+const USER_MESSAGE_FOLD_HEIGHT = 280;
+// Fold only when it hides more than a couple of lines.
+const USER_MESSAGE_FOLD_SLACK = 60;
+const USER_MESSAGE_FOLDED_DATASET = { sosUserFolded: "" } as const;
+
 const userMessageStylesheet = StyleSheet.create((theme) => ({
   container: {
     flexDirection: "row",
@@ -363,6 +368,18 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
           overflowWrap: "anywhere" as const,
         }
       : {}),
+  },
+  textFolded: {
+    maxHeight: USER_MESSAGE_FOLD_HEIGHT,
+    overflow: "hidden",
+  },
+  foldToggle: {
+    alignSelf: "flex-start",
+    marginTop: theme.spacing[1],
+  },
+  foldToggleText: {
+    color: theme.colors.accent,
+    fontSize: theme.fontSize.sm,
   },
   imagePreviewContainer: {
     flexDirection: "row",
@@ -422,6 +439,63 @@ function UserMessageImagePill({ image, onOpen, accessibilityLabel }: UserMessage
 }
 
 const MESSAGE_TEXT_DATASET = { messageText: "true" };
+
+/**
+ * sos: the user's text rendered as Markdown, like assistant text. Long messages fold to
+ * USER_MESSAGE_FOLD_HEIGHT until "Show all" is pressed.
+ */
+function UserMessageText({
+  messageId,
+  message,
+  timestamp,
+  serverId,
+  client,
+}: Pick<UserMessageProps, "messageId" | "message" | "timestamp" | "serverId" | "client">) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [textHeight, setTextHeight] = useState(0);
+  const isFoldable = textHeight > USER_MESSAGE_FOLD_HEIGHT + USER_MESSAGE_FOLD_SLACK;
+  const isFolded = isFoldable && !isExpanded;
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => setTextHeight(event.nativeEvent.layout.height),
+    [],
+  );
+  const toggleExpanded = useCallback(() => setIsExpanded((value) => !value), []);
+
+  return (
+    <>
+      <View
+        style={isFolded ? userMessageStylesheet.textFolded : undefined}
+        dataSet={isFolded ? USER_MESSAGE_FOLDED_DATASET : undefined}
+      >
+        <View onLayout={handleLayout}>
+          <AssistantMessage
+            testID="user-message-text"
+            occurrenceKey={`user:${messageId ?? timestamp}`}
+            message={message}
+            timestamp={timestamp}
+            serverId={serverId}
+            client={client}
+            spacing="compactBoth"
+            phase="complete"
+            renderFullContent
+          />
+        </View>
+      </View>
+      {isFoldable ? (
+        <Pressable
+          onPress={toggleExpanded}
+          accessibilityRole="button"
+          style={userMessageStylesheet.foldToggle}
+          testID="user-message-fold-toggle"
+        >
+          <Text style={userMessageStylesheet.foldToggleText}>
+            {isExpanded ? "Show less" : "Show all"}
+          </Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
+}
 
 export const UserMessage = memo(function UserMessage({
   serverId,
@@ -542,9 +616,13 @@ export const UserMessage = memo(function UserMessage({
             </View>
           ) : null}
           {hasText ? (
-            <Text selectable style={userMessageStylesheet.text} dataSet={MESSAGE_TEXT_DATASET}>
-              {message}
-            </Text>
+            <UserMessageText
+              messageId={messageId}
+              message={message}
+              timestamp={timestamp}
+              serverId={serverId}
+              client={client}
+            />
           ) : null}
         </View>
         {hasText ? (
@@ -757,11 +835,13 @@ interface AssistantMessageProps {
   client?: DaemonClient | null;
   spacing?: "default" | "compactTop" | "compactBottom" | "compactBoth";
   phase: MarkdownPhase;
+  testID?: string;
 }
 
 export const assistantMessageStylesheet = StyleSheet.create((theme) => ({
   container: {
-    paddingVertical: theme.spacing[3],
+    // sos: 8px instead of 12px so text sits as close to tool rows as to its own paragraphs.
+    paddingVertical: theme.spacing[2],
     ...(isWeb ? { userSelect: "text" as const } : {}),
   },
   containerCompactTop: {
@@ -1115,7 +1195,8 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     borderWidth: theme.borderWidth[1],
     borderColor: "transparent",
     paddingHorizontal: theme.spacing[2],
-    paddingVertical: theme.spacing[1],
+    // sos: 2px instead of 4px keeps a run of tool rows compact.
+    paddingVertical: 2,
     overflow: "hidden",
   },
   pressablePressed: {
@@ -1163,6 +1244,10 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   },
   secondaryLabelActive: {
     color: theme.colors.foreground,
+  },
+  secondaryLabelMono: {
+    fontFamily: theme.fontFamily.mono,
+    fontSize: theme.fontSize.code,
   },
   shimmerText: {
     color: "transparent",
@@ -1502,6 +1587,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   client,
   spacing = "default",
   phase,
+  testID = "assistant-message",
 }: AssistantMessageProps) {
   const { t } = useTranslation();
   const markdownParser = useMemo(createAssistantMarkdownParser, []);
@@ -1987,7 +2073,7 @@ export const AssistantMessage = memo(function AssistantMessage({
   );
 
   return (
-    <View testID="assistant-message" dataSet={revealDataSet} style={assistantContainerStyle}>
+    <View testID={testID} dataSet={revealDataSet} style={assistantContainerStyle}>
       {keyedBlocks.map(({ key, block }, index) => (
         <AssistantMessageBlockContainer
           key={key}
@@ -2330,6 +2416,8 @@ interface ExpandableBadgeProps {
   isLastInSequence?: boolean;
   disableOuterSpacing?: boolean;
   borderlessWhenExpanded?: boolean;
+  /** sos: render the summary (command, path, pattern) in the code font. */
+  monospaceSecondary?: boolean;
   testID?: string;
 }
 
@@ -2693,6 +2781,7 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   isLastInSequence = false,
   disableOuterSpacing,
   borderlessWhenExpanded = false,
+  monospaceSecondary = false,
   testID,
 }: ExpandableBadgeProps) {
   const resolvedDisableOuterSpacing = useDisableOuterSpacing(disableOuterSpacing);
@@ -2895,9 +2984,10 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   const secondaryLabelStyle = useMemo(
     () => [
       expandableBadgeStylesheet.secondaryLabel,
+      monospaceSecondary && expandableBadgeStylesheet.secondaryLabelMono,
       isActive && expandableBadgeStylesheet.secondaryLabelActive,
     ],
-    [isActive],
+    [isActive, monospaceSecondary],
   );
 
   const shimmerLabelTextStyle = useMemo(
@@ -2913,10 +3003,11 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   const shimmerSecondaryTextStyle = useMemo(
     () => [
       expandableBadgeStylesheet.secondaryLabel,
+      monospaceSecondary && expandableBadgeStylesheet.secondaryLabelMono,
       expandableBadgeStylesheet.shimmerText,
       shimmerSecondaryStyle,
     ],
-    [shimmerSecondaryStyle],
+    [monospaceSecondary, shimmerSecondaryStyle],
   );
 
   const chevronStyle = useMemo(
@@ -3014,6 +3105,7 @@ function areExpandableBadgePropsEqual(previous: ExpandableBadgeProps, next: Expa
   if (previous.isLastInSequence !== next.isLastInSequence) return false;
   if (previous.disableOuterSpacing !== next.disableOuterSpacing) return false;
   if (previous.borderlessWhenExpanded !== next.borderlessWhenExpanded) return false;
+  if (previous.monospaceSecondary !== next.monospaceSecondary) return false;
   if (previous.testID !== next.testID) return false;
   if (previous.onToggle !== next.onToggle) return false;
   if (previous.onOpenFile !== next.onOpenFile) return false;
@@ -3200,9 +3292,17 @@ export const ToolCall = memo(function ToolCall({
       isLastInSequence={isLastInSequence}
       disableOuterSpacing={disableOuterSpacing}
       onDetailHoverChange={onInlineDetailsHoverChange}
+      monospaceSecondary={isCodeSummaryDetail(effectiveDetail)}
     />
   );
 }, areToolCallPropsEqual);
+
+// sos: tools whose summary is a command, path or pattern rather than prose.
+const CODE_SUMMARY_DETAIL_TYPES = new Set(["shell", "read", "edit", "write", "search"]);
+
+function isCodeSummaryDetail(detail: ToolCallDetail | undefined): boolean {
+  return detail !== undefined && CODE_SUMMARY_DETAIL_TYPES.has(detail.type);
+}
 
 function areToolCallPropsEqual(previous: ToolCallProps, next: ToolCallProps) {
   if (previous.toolName !== next.toolName) return false;

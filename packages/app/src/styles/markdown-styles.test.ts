@@ -88,13 +88,13 @@ describe("createMarkdownStyles", () => {
     });
   });
 
-  it("uses the mono font-size token directly for inline and block code", () => {
+  it("uses the mono font-size token for block code and one step above it for inline code", () => {
     const styles = createMarkdownStyles(darkTheme);
     const compactStyles = createCompactMarkdownStyles(darkTheme);
 
     expect(styles.code_inline).toMatchObject({
       fontFamily: darkTheme.fontFamily.mono,
-      fontSize: darkTheme.fontSize.code,
+      fontSize: darkTheme.fontSize.code + 1,
     });
     expect(styles.code_inline).not.toHaveProperty("lineHeight");
     expect(styles.code_block).toMatchObject({
@@ -107,7 +107,7 @@ describe("createMarkdownStyles", () => {
     });
     expect(compactStyles.code_inline).toMatchObject({
       fontFamily: darkTheme.fontFamily.mono,
-      fontSize: darkTheme.fontSize.code,
+      fontSize: darkTheme.fontSize.code + 1,
     });
     expect(compactStyles.code_inline).not.toHaveProperty("lineHeight");
   });

@@ -182,7 +182,8 @@ export function createMarkdownStyles(theme: Theme) {
       borderRadius: theme.borderRadius.md,
       borderWidth: 0,
       fontFamily: theme.fontFamily.mono,
-      fontSize: theme.fontSize.code,
+      // sos: one step above the code size so inline code doesn't look shrunken in prose.
+      fontSize: theme.fontSize.code + 1,
     },
 
     code_block: {
@@ -404,7 +405,7 @@ export function createCompactMarkdownStyles(theme: Theme) {
 
     code_inline: {
       ...baseStyles.code_inline,
-      fontSize: theme.fontSize.code,
+      fontSize: theme.fontSize.code + 1,
     },
 
     code_block: {

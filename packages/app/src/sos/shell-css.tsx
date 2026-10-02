@@ -115,14 +115,28 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
 }
 [data-sos-shell] [data-testid="message-input-root"] > div:first-child:focus-within {
   border-color: var(--sos-accent) !important;
-  outline: 1px solid var(--sos-accent);
 }
 
+/* Your messages: one full-width filled block, no border; long ones fold (message.tsx). */
+[data-sos-shell] [data-testid="user-message"] > div:first-child {
+  flex: 1 1 auto !important;
+  align-items: stretch !important;
+}
 [data-sos-shell] [data-testid="user-message"] > div > div:first-child {
-  background-color: var(--sos-inline) !important;
-  border: 1px solid var(--sos-border);
+  background-color: color-mix(in srgb, var(--sos-foreground) 6%, var(--sos-island)) !important;
   border-radius: 10px !important;
-  padding: 9px 13px !important;
+  padding: 10px 14px !important;
+}
+[data-sos-shell] [data-sos-user-folded] {
+  -webkit-mask-image: linear-gradient(#000 70%, transparent);
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+
+/* Inline code: a quiet box with a hairline edge instead of a heavy grey fill. */
+[data-sos-shell] [data-paseo-markdown-tag="code"] {
+  background-color: color-mix(in srgb, var(--sos-foreground) 7%, var(--sos-island)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sos-foreground) 12%, var(--sos-island));
+  border-radius: 4px !important;
 }
 
 [data-sos-shell] [data-testid="workspace-tabs-row"] {

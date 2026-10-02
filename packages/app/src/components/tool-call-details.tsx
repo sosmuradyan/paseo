@@ -166,20 +166,14 @@ function ShellDetailSection({ command, output, ds }: ShellDetailProps) {
           nestedScrollEnabled
           showsVerticalScrollIndicator
         >
-          <ScrollView
-            horizontal
-            nestedScrollEnabled
-            showsHorizontalScrollIndicator
-            contentContainerStyle={styles.codeHorizontalContent}
-          >
-            <View style={styles.codeLine} dataSet={CODE_SURFACE_DATASET}>
-              <Text selectable style={styles.scrollText}>
-                <Text style={styles.shellPrompt}>$ </Text>
-                {normalizedCommand}
-                {hasOutput ? `\n\n${commandOutput}` : ""}
-              </Text>
-            </View>
-          </ScrollView>
+          {/* sos: shell output wraps long lines instead of scrolling sideways. */}
+          <View style={styles.codeLine} dataSet={CODE_SURFACE_DATASET}>
+            <Text selectable style={styles.wrappedScrollText}>
+              <Text style={styles.shellPrompt}>$ </Text>
+              {normalizedCommand}
+              {hasOutput ? `\n\n${commandOutput}` : ""}
+            </Text>
+          </View>
         </ScrollView>
       </View>
     </View>
@@ -946,6 +940,18 @@ const styles = StyleSheet.create((theme) => {
         ? {
             whiteSpace: "pre",
             overflowWrap: "normal",
+          }
+        : null),
+    },
+    wrappedScrollText: {
+      fontFamily: theme.fontFamily.mono,
+      fontSize: theme.fontSize.code,
+      color: theme.colors.foreground,
+      lineHeight: 18,
+      ...(isWeb
+        ? {
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
           }
         : null),
     },
