@@ -2961,7 +2961,8 @@ export const ExpandableBadge = memo(function ExpandableBadge({
         (isLastInSequence
           ? expandableBadgeStylesheet.containerLastInSequence
           : expandableBadgeStylesheet.containerSpacing),
-      !resolvedDisableOuterSpacing && isExpanded && expandableBadgeStylesheet.containerExpanded,
+      // sos: applies even when the chat turns off row margins; opened cards always need air.
+      isExpanded && expandableBadgeStylesheet.containerExpanded,
       style,
     ],
     [isExpanded, isLastInSequence, resolvedDisableOuterSpacing, style],
