@@ -78,7 +78,7 @@ import {
   ToolbarControls,
 } from "@/components/ui/pane-content-toolbar";
 import { smallIconButtonChromeFrameSize } from "@/components/ui/icon-button-chrome";
-import { useSosTabStyles } from "@/sos/tab-styles";
+import { SOS_FOCUSED_TAB_OVERLAY_DATA_SET, useSosTabStyles } from "@/sos/tab-styles";
 import {
   HorizontalScrollBoundaryShades,
   useHorizontalScrollBoundary,
@@ -886,6 +886,7 @@ function TabChip({
         {showCloseButton ? (
           <View
             pointerEvents={showCloseControl ? "box-none" : "none"}
+            dataSet={sosTabStyles && isActiveFocused ? SOS_FOCUSED_TAB_OVERLAY_DATA_SET : undefined} // SOS: pill-colored fade
             style={[
               styles.tabTrailingOverlay,
               showCloseControl ? styles.tabTrailingOverlayShown : styles.tabTrailingOverlayHidden,

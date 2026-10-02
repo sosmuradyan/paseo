@@ -4,6 +4,7 @@ import { isWeb } from "@/constants/platform";
 import { deriveIdentityColorName, identityColor } from "@/styles/identity-colors";
 import type { Theme } from "@/styles/theme";
 import { mixHex } from "./color";
+import { SOS_ISLAND_RADIUS } from "./metrics";
 
 // SOS: JetBrains density for upstream screens the shell does not own. Every selector keys on
 // upstream `data-testid` / ARIA attributes under `[data-sos-shell]`, never on component code or
@@ -119,6 +120,15 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   border: 1px solid var(--sos-border);
   border-radius: 10px !important;
   padding: 9px 13px !important;
+}
+
+[data-sos-shell] [data-testid="workspace-tabs-row"] {
+  border-top-left-radius: ${SOS_ISLAND_RADIUS}px;
+  border-top-right-radius: ${SOS_ISLAND_RADIUS}px;
+}
+/* The close button's fade matches the focused tab pill (tab-styles.ts activeFocused). */
+[data-sos-shell] [data-sos-tab-focused] stop {
+  stop-color: color-mix(in srgb, var(--sos-accent) 27%, var(--sos-island));
 }
 
 [data-sos-toolbar] [data-testid="workspace-explorer-toggle"] { display: none !important; }

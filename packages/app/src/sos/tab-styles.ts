@@ -21,6 +21,9 @@ const tabStyles = StyleSheet.create((theme) => ({
   },
 }));
 
+/** Marks the focused tab's trailing overlay so the shell stylesheet can recolor its fade. */
+export const SOS_FOCUSED_TAB_OVERLAY_DATA_SET = { sosTabFocused: "true" };
+
 export function useSosTabStyles() {
   return useSosShellEnabled() ? tabStyles : null;
 }
