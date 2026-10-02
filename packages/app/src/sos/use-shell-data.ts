@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useCheckoutStatusQuery } from "@/git/use-status-query";
 import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
+import { useSidebarWorkspacesList } from "@/hooks/use-sidebar-workspaces-list";
 import { useHosts } from "@/runtime/host-runtime";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { useWorkspace } from "@/stores/session-store-hooks";
@@ -53,6 +54,21 @@ export function useSosActiveWorkspace() {
       })
     : null;
   return { selection, workspace, serverId, host, workspaceKey };
+}
+
+/** Every sidebar project, plus the one that holds the given workspace. */
+export function useSosProjects(serverId: string | null, workspaceId: string | null) {
+  const { projects } = useSidebarWorkspacesList();
+  const current = useMemo(
+    () =>
+      projects.find((project) =>
+        project.workspaces.some(
+          (placement) => placement.serverId === serverId && placement.workspaceId === workspaceId,
+        ),
+      ) ?? null,
+    [projects, serverId, workspaceId],
+  );
+  return { projects, current };
 }
 
 /** The checkout's live branch, from the same push-driven query the workspace header uses. */

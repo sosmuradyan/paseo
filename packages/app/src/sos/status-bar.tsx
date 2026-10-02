@@ -1,14 +1,22 @@
 import { ChevronRight, GitBranch, Server } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { ProjectIconView } from "@/components/project-icon-view";
+import { getProviderIcon } from "@/components/provider-icons";
 import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 import { useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import type { Theme } from "@/styles/theme";
 import { resolveAppVersion } from "@/utils/app-version";
+import { projectIconPlaceholderLabelFromDisplayName } from "@/utils/project-display-name";
 import { SOS_STATUS_BAR_HEIGHT } from "./metrics";
-import { useSosActiveWorkspace, useSosCheckout, useSosFocusedAgentId } from "./use-shell-data";
+import {
+  useSosActiveWorkspace,
+  useSosCheckout,
+  useSosFocusedAgentId,
+  useSosProjects,
+} from "./use-shell-data";
 
 const ThemedChevronRight = withUnistyles(ChevronRight);
 const ThemedGitBranch = withUnistyles(GitBranch);
@@ -19,7 +27,11 @@ const extraMutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundExtraM
 const MAX_USAGE_PROVIDERS = 2;
 
 export function SosStatusBar() {
-  const { workspace, serverId, host, workspaceKey } = useSosActiveWorkspace();
+  const { selection, workspace, serverId, host, workspaceKey } = useSosActiveWorkspace();
+  const { current: project } = useSosProjects(
+    selection?.serverId ?? null,
+    selection?.workspaceId ?? null,
+  );
   const isConnected = useHostRuntimeIsConnected(serverId ?? "");
   const { branch } = useSosCheckout(serverId, workspace?.workspaceDirectory ?? null);
   const agent = useSosFocusedAgent(serverId, workspaceKey);
@@ -30,21 +42,42 @@ export function SosStatusBar() {
   return (
     <View style={styles.bar}>
       <View style={styles.crumbs}>
-        {projectName ? <Text style={styles.crumb}>{projectName}</Text> : null}
+        {projectName ? (
+          <View style={styles.crumbItem}>
+            {project ? (
+              <ProjectIconView
+                iconDataUri={null}
+                initial={projectIconPlaceholderLabelFromDisplayName(projectName)
+                  .slice(0, 1)
+                  .toUpperCase()}
+                projectViewKey={project.viewKey}
+                size={12}
+                textStyle={styles.crumbBadgeText}
+              />
+            ) : null}
+            <Text style={styles.crumb}>{projectName}</Text>
+          </View>
+        ) : null}
         {projectName && workspaceName ? (
           <ThemedChevronRight size={12} uniProps={extraMutedIcon} />
         ) : null}
         {workspaceName ? (
-          <Text style={[styles.crumb, !agent && styles.crumbCurrent]} numberOfLines={1}>
-            {workspaceName}
-          </Text>
+          <View style={styles.crumbItem}>
+            <ThemedGitBranch size={12} uniProps={mutedIcon} />
+            <Text style={[styles.crumb, !agent && styles.crumbCurrent]} numberOfLines={1}>
+              {workspaceName}
+            </Text>
+          </View>
         ) : null}
         {workspaceName && agent ? (
           <>
             <ThemedChevronRight size={12} uniProps={extraMutedIcon} />
-            <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
-              {agent.title || "New agent"}
-            </Text>
+            <View style={styles.crumbItem}>
+              <AgentCrumbIcon provider={agent.provider} serverId={serverId} />
+              <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
+                {agent.title || "New agent"}
+              </Text>
+            </View>
           </>
         ) : null}
       </View>
@@ -83,7 +116,13 @@ function useSosFocusedAgent(serverId: string | null, workspaceKey: string | null
     : undefined;
   if (!agent) return null;
   const startedAt = agent.turn?.phase === "open" ? agent.turn.startedAt : null;
-  return { title: agent.title, status: agent.status, startedAt };
+  return { title: agent.title, status: agent.status, provider: agent.provider, startedAt };
+}
+
+function AgentCrumbIcon({ provider, serverId }: { provider: string; serverId: string | null }) {
+  const { theme } = useUnistyles();
+  const Icon = getProviderIcon(provider, serverId);
+  return <Icon size={12} color={theme.colors.foregroundMuted} />;
 }
 
 function formatElapsed(ms: number): string {
@@ -165,6 +204,17 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     minWidth: 0,
     flexShrink: 1,
+  },
+  crumbItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    minWidth: 0,
+    flexShrink: 1,
+  },
+  crumbBadgeText: {
+    fontSize: 7,
+    fontWeight: "700",
   },
   crumb: {
     color: theme.colors.foregroundMuted,

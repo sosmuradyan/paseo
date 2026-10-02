@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Bell, ChevronDown, GitBranch, Plus, Search, Settings } from "lucide-react-native";
+import { ChevronDown, GitBranch, Plus, Search, Settings } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -7,15 +7,6 @@ import { BranchSwitcher } from "@/components/branch-switcher";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { ProjectIconView } from "@/components/project-icon-view";
 import { Combobox, ComboboxItem, type ComboboxProps } from "@/components/ui/combobox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
-import { useSidebarWorkspacesList } from "@/hooks/use-sidebar-workspaces-list";
 import { useKeyboardActionDispatcher } from "@/keyboard/keyboard-action-dispatcher-context";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
@@ -25,11 +16,16 @@ import { buildSettingsRoute } from "@/utils/host-routes";
 import { projectIconPlaceholderLabelFromDisplayName } from "@/utils/project-display-name";
 import { useSosHeaderSlotRef } from "./header-slot";
 import { SOS_TOOLBAR_HEIGHT } from "./metrics";
-import { useSosActiveWorkspace, useSosAgentCounts, useSosCheckout } from "./use-shell-data";
+import { useSosProjectGlow } from "./shell-css";
+import {
+  useSosActiveWorkspace,
+  useSosAgentCounts,
+  useSosCheckout,
+  useSosProjects,
+} from "./use-shell-data";
 
 const ThemedSearch = withUnistyles(Search);
 const ThemedSettings = withUnistyles(Settings);
-const ThemedBell = withUnistyles(Bell);
 const ThemedPlus = withUnistyles(Plus);
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedGitBranch = withUnistyles(GitBranch);
@@ -38,7 +34,7 @@ const foregroundIcon = (theme: Theme) => ({ color: theme.colors.foreground });
 
 /**
  * JetBrains main toolbar: project and branch widgets on the left, the agent run widget,
- * New agent, Search, Notifications and Settings on the right. The right slot also receives
+ * New agent, Search and Settings on the right. Notifications live on the right stripe. The right slot also receives
  * the focused workspace's own header actions (scripts, open in editor, plugin buttons).
  */
 export function SosToolbar() {
@@ -68,7 +64,6 @@ export function SosToolbar() {
       <IconButton label="Search" onPress={openSearch}>
         <ThemedSearch size={16} uniProps={mutedIcon} />
       </IconButton>
-      <NotificationsButton />
       <IconButton label="Settings" onPress={openSettings}>
         <ThemedSettings size={16} uniProps={mutedIcon} />
       </IconButton>
@@ -110,16 +105,8 @@ function widgetStyle({ hovered }: { hovered?: boolean }) {
 function ProjectWidget({ serverId, workspaceId }: { serverId: string; workspaceId: string }) {
   const anchorRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
-  const { projects: list } = useSidebarWorkspacesList();
-  const current = useMemo(
-    () =>
-      list.find((project) =>
-        project.workspaces.some(
-          (placement) => placement.serverId === serverId && placement.workspaceId === workspaceId,
-        ),
-      ) ?? null,
-    [list, serverId, workspaceId],
-  );
+  const { projects: list, current } = useSosProjects(serverId, workspaceId);
+  useSosProjectGlow(current?.viewKey ?? null);
   const options = useMemo(
     () =>
       list
@@ -238,57 +225,6 @@ function NewAgentButton() {
   );
 }
 
-const ATTENTION_LABELS = {
-  finished: "Finished",
-  error: "Failed",
-  permission: "Needs permission",
-} as const;
-
-/** Agents that asked for attention, newest first. Selecting one opens its tab. */
-function NotificationsButton() {
-  const { agents } = useAggregatedAgents();
-  const pending = useMemo(
-    () =>
-      agents
-        .filter((agent) => agent.requiresAttention && agent.workspaceId)
-        .sort(
-          (a, b) => (b.attentionTimestamp?.getTime() ?? 0) - (a.attentionTimestamp?.getTime() ?? 0),
-        )
-        .slice(0, 12),
-    [agents],
-  );
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger style={iconButtonStyle} accessibilityLabel="Notifications">
-        <ThemedBell size={16} uniProps={mutedIcon} />
-        {pending.length > 0 ? <View style={styles.bellDot} /> : null}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="bottom" align="end" offset={6} width={320}>
-        <DropdownMenuLabel>
-          {pending.length > 0 ? "Needs your attention" : "Nothing needs your attention"}
-        </DropdownMenuLabel>
-        {pending.map((agent) => (
-          <DropdownMenuItem
-            key={`${agent.serverId}:${agent.id}`}
-            description={
-              agent.attentionReason ? ATTENTION_LABELS[agent.attentionReason] : undefined
-            }
-            onSelect={() =>
-              navigateToWorkspace({
-                serverId: agent.serverId,
-                workspaceId: agent.workspaceId as string,
-                target: { kind: "agent", agentId: agent.id },
-              })
-            }
-          >
-            {agent.title || "Untitled agent"}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 function AgentStatusWidget() {
   const counts = useSosAgentCounts();
   if (counts.running === 0 && counts.waiting === 0 && counts.failed === 0) {
@@ -385,23 +321,10 @@ const styles = StyleSheet.create((theme) => ({
   hovered: {
     backgroundColor: theme.colors.interactionHighlight,
   },
-  bellDot: {
-    position: "absolute",
-    top: 5,
-    right: 5,
-    width: 7,
-    height: 7,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.statusDotWarning,
-    borderWidth: 1.5,
-    borderColor: theme.colors.surface1,
-  },
   statusWidget: {
     flexDirection: "row",
     alignItems: "center",
     height: 28,
-    borderRadius: 6,
-    backgroundColor: theme.colors.interactionHighlight,
     marginRight: 6,
   },
   statusSegment: {
@@ -413,7 +336,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   statusSegmentDivided: {
     borderLeftWidth: 1,
-    borderLeftColor: theme.colors.surface1,
+    borderLeftColor: theme.colors.border,
   },
   dot: {
     width: 7,

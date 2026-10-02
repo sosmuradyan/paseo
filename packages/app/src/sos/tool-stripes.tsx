@@ -7,7 +7,7 @@ import {
   History,
   Layers,
 } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useKeyboardActionDispatcher } from "@/keyboard/keyboard-action-dispatcher-context";
@@ -20,6 +20,7 @@ import {
   buildSettingsHostSectionRoute,
 } from "@/utils/host-routes";
 import { SOS_STRIPE_WIDTH } from "./metrics";
+import { SosNotificationsButton } from "./notifications";
 import { useSosActiveWorkspace, useSosCheckout, useSosExplorerTabKind } from "./use-shell-data";
 
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
@@ -32,22 +33,33 @@ const ThemedGitCompare = withUnistyles(GitCompare);
 const ThemedBlocks = withUnistyles(Blocks);
 type ThemedIcon = typeof ThemedLayers;
 
+/**
+ * `panel` names the tool window the button opens, so the shell stylesheet can paint the
+ * active button solid accent while focus is inside that panel, as JetBrains does.
+ */
 function StripeButton({
   icon,
   label,
   active,
+  panel,
   onPress,
 }: {
   icon: ThemedIcon;
   label: string;
   active: boolean;
+  panel?: "workspaces" | "explorer";
   onPress: () => void;
 }) {
   const Icon = icon;
+  const dataSet = useMemo(
+    () => (panel ? { sosStripe: panel, sosStripeActive: active ? "true" : "false" } : undefined),
+    [active, panel],
+  );
   return (
     <Pressable
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
+      dataSet={dataSet}
       onPress={onPress}
       style={({ hovered }) => [
         styles.button,
@@ -78,8 +90,10 @@ export function SosLeftStripe() {
         icon={ThemedLayers}
         label="Workspaces"
         active={isWorkspacesOpen}
+        panel="workspaces"
         onPress={toggleWorkspaces}
       />
+      <View style={styles.divider} />
       <StripeButton
         icon={ThemedHistory}
         label="History"
@@ -109,7 +123,10 @@ export function SosLeftStripe() {
 
 type ExplorerView = "files" | "changes_tree";
 
-/** Right edge: the focused workspace's Explorer views. Hidden off workspace routes. */
+/**
+ * Right edge: Notifications on top, then the focused workspace's Explorer views, which hide
+ * off workspace routes.
+ */
 export function SosRightStripe() {
   const { serverId, workspace, workspaceKey } = useSosActiveWorkspace();
   const dispatcher = useKeyboardActionDispatcher();
@@ -134,12 +151,15 @@ export function SosRightStripe() {
 
   return (
     <View style={styles.stripe}>
+      <SosNotificationsButton />
       {workspaceKey ? (
         <>
+          <View style={styles.divider} />
           <StripeButton
             icon={ThemedFolderTree}
             label="Files"
             active={activeView === "files"}
+            panel="explorer"
             onPress={toggleFiles}
           />
           {isGit ? (
@@ -147,6 +167,7 @@ export function SosRightStripe() {
               icon={ThemedGitCompare}
               label="Changes"
               active={activeView === "changes_tree"}
+              panel="explorer"
               onPress={toggleChanges}
             />
           ) : null}
@@ -172,6 +193,12 @@ const styles = StyleSheet.create((theme) => ({
   },
   buttonHovered: {
     backgroundColor: theme.colors.interactionHighlight,
+  },
+  divider: {
+    width: 20,
+    height: 1,
+    marginVertical: 2,
+    backgroundColor: theme.colors.border,
   },
   grow: {
     flex: 1,

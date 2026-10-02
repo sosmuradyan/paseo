@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { withUnistyles } from "react-native-unistyles";
 import { isWeb } from "@/constants/platform";
+import { deriveIdentityColorName, identityColor } from "@/styles/identity-colors";
 import type { Theme } from "@/styles/theme";
+import { mixHex } from "./color";
 
 // SOS: JetBrains density for upstream screens the shell does not own. Every selector keys on
 // upstream `data-testid` / ARIA attributes under `[data-sos-shell]`, never on component code or
@@ -22,8 +24,21 @@ const PROJECT_GROUP =
 const HAS_CHILD_ROWS =
   ':has([data-testid^="sidebar-workspace-row-"], [data-testid^="sidebar-project-new-workspace-row-"])';
 const EXPLORER_TAB = '[data-sos-shell] [data-testid^="explorer-sidebar-tab-"]:is(button)';
+// JetBrains marks the tool window holding keyboard focus: its stripe button turns solid accent
+// and its selected row keeps the accent selection. Elsewhere the selection goes neutral.
+const WORKSPACES_FOCUSED =
+  '[data-sos-shell]:has([data-testid="sidebar-project-workspace-list-scroll"]:focus-within)';
+const EXPLORER_FOCUSED =
+  '[data-sos-shell]:has([data-testid="workspace-explorer-sidebar"]:focus-within)';
+const FOCUSED_STRIPE = `${WORKSPACES_FOCUSED} [data-sos-stripe="workspaces"][data-sos-stripe-active="true"],
+${EXPLORER_FOCUSED} [data-sos-stripe="explorer"][data-sos-stripe-active="true"]`;
 
 const RULES = `
+[data-sos-shell] {
+  background-image: radial-gradient(760px 90px at 170px 0, var(--sos-project-glow), transparent);
+  background-repeat: no-repeat;
+}
+
 ${WS_ROW} {
   min-height: 26px !important;
   padding: 3px 8px 3px 22px !important;
@@ -31,7 +46,12 @@ ${WS_ROW} {
   border-radius: 5px !important;
   gap: 2px !important;
 }
-${WS_ROW}[aria-selected="true"] { background-color: var(--sos-selection) !important; }
+${WS_ROW}[aria-selected="true"] { background-color: var(--sos-selection-inactive) !important; }
+${WORKSPACES_FOCUSED} [data-testid^="sidebar-workspace-row-"][aria-selected="true"] {
+  background-color: var(--sos-selection) !important;
+}
+${FOCUSED_STRIPE} { background-color: var(--sos-accent) !important; }
+:is(${FOCUSED_STRIPE}) svg [stroke]:not([stroke="none"]) { stroke: #ffffff; }
 ${WS_ROW}[aria-selected="true"] div[dir="auto"] { opacity: 1 !important; }
 
 ${PROJECT_ROW} {
@@ -102,6 +122,12 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
 }
 
 [data-sos-toolbar] [data-testid="workspace-explorer-toggle"] { display: none !important; }
+[data-sos-toolbar] :has(> [data-testid="workspace-open-in-editor-primary"]) {
+  border-color: transparent !important;
+}
+[data-sos-toolbar] [data-testid="workspace-open-in-editor-caret"] {
+  border-left-color: transparent !important;
+}
 
 [data-sos-shell] ::selection { background: var(--sos-selection); }
 [data-sos-shell] ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -113,27 +139,6 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   background-clip: padding-box;
 }
 `;
-
-function mixHex(base: string, over: string, amount: number): string {
-  const parse = (hex: string) => {
-    const value = hex.replace("#", "");
-    const full =
-      value.length === 3
-        ? value
-            .split("")
-            .map((c) => c + c)
-            .join("")
-        : value.slice(0, 6);
-    return [0, 2, 4].map((i) => Number.parseInt(full.slice(i, i + 2), 16));
-  };
-  const a = parse(base);
-  const b = parse(over);
-  if (a.some(Number.isNaN) || b.some(Number.isNaN)) return over;
-  return `#${a
-    .map((channel, i) => Math.round(channel + (b[i] - channel) * amount))
-    .map((channel) => channel.toString(16).padStart(2, "0"))
-    .join("")}`;
-}
 
 interface ShellCssVars {
   surface: string;
@@ -155,6 +160,8 @@ function ShellCssVarsWriter({ surface, border, accent, foreground, muted }: Shel
     const root = document.documentElement.style;
     // JetBrains selection-bg-active (#2A4371) is the accent at ~30% over the island.
     root.setProperty("--sos-selection", mixHex(surface, accent, 0.3));
+    // JetBrains selection-bg-inactive: a neutral lift for the selection outside focus.
+    root.setProperty("--sos-selection-inactive", mixHex(surface, foreground, 0.08));
     root.setProperty("--sos-foreground", foreground);
     root.setProperty("--sos-island", surface);
     // JetBrains editor-bg-inline (#212326): a 3% lift off the island.
@@ -179,4 +186,21 @@ const cssVarsFromTheme = (theme: Theme): ShellCssVars => ({
 /** Injects the shell stylesheet once and keeps its color variables on the active theme. */
 export function SosShellCss() {
   return <ThemedShellCssVarsWriter uniProps={cssVarsFromTheme} />;
+}
+
+/**
+ * JetBrains project-colored title bar: the current project's identity color glows from the
+ * top-left corner behind the toolbar. With no project the variable is unset and the
+ * gradient drops out.
+ */
+export function useSosProjectGlow(projectViewKey: string | null) {
+  useEffect(() => {
+    if (!isWeb || typeof document === "undefined" || !projectViewKey) return;
+    const color = identityColor(deriveIdentityColorName(projectViewKey));
+    const root = document.documentElement.style;
+    root.setProperty("--sos-project-glow", `color-mix(in srgb, ${color} 60%, transparent)`);
+    return () => {
+      root.removeProperty("--sos-project-glow");
+    };
+  }, [projectViewKey]);
 }

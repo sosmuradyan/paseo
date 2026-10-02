@@ -775,7 +775,8 @@ function TabChip({
       isActiveFocused && styles.tabActive,
       isActive && !isFocused && styles.tabActiveUnfocused,
       !isActive && isHovered && styles.tabHovered,
-      isActive && sosTabStyles?.active, // SOS: JetBrains tab selection
+      sosTabStyles?.base, // SOS: JetBrains tab selection
+      isActive && sosTabStyles?.active,
       isActiveFocused && sosTabStyles?.activeFocused,
       isWeb && isDragging && ({ cursor: "grabbing" } as object),
       {
