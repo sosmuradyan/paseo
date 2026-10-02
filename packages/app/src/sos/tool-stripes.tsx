@@ -1,21 +1,26 @@
 import { router, usePathname } from "expo-router";
-import { CalendarClock, FolderTree, GitCompare, History, Layers } from "lucide-react-native";
+import {
+  Blocks,
+  CalendarClock,
+  FolderTree,
+  GitCompare,
+  History,
+  Layers,
+} from "lucide-react-native";
 import { useCallback } from "react";
 import { Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useKeyboardActionDispatcher } from "@/keyboard/keyboard-action-dispatcher-context";
+import { SidebarHelpMenu } from "@/components/sidebar/sidebar-help-menu";
 import { usePanelStore } from "@/stores/panel-store";
-import type { SplitNode } from "@/stores/workspace-layout-actions";
-import {
-  selectExplorerSidebarPaneId,
-  selectIsExplorerSidebarVisible,
-  useWorkspaceLayoutStore,
-} from "@/stores/workspace-layout-store";
 import type { Theme } from "@/styles/theme";
-import { buildSchedulesRoute, buildSessionsRoute } from "@/utils/host-routes";
-import { buildWorkspaceTabPersistenceKey } from "@/workspace-tabs/model";
+import {
+  buildSchedulesRoute,
+  buildSessionsRoute,
+  buildSettingsHostSectionRoute,
+} from "@/utils/host-routes";
 import { SOS_STRIPE_WIDTH } from "./metrics";
-import { useSosActiveWorkspace } from "./use-shell-data";
+import { useSosActiveWorkspace, useSosCheckout, useSosExplorerTabKind } from "./use-shell-data";
 
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const activeIcon = (theme: Theme) => ({ color: theme.colors.foreground });
@@ -24,6 +29,7 @@ const ThemedHistory = withUnistyles(History);
 const ThemedCalendarClock = withUnistyles(CalendarClock);
 const ThemedFolderTree = withUnistyles(FolderTree);
 const ThemedGitCompare = withUnistyles(GitCompare);
+const ThemedBlocks = withUnistyles(Blocks);
 type ThemedIcon = typeof ThemedLayers;
 
 function StripeButton({
@@ -61,6 +67,10 @@ export function SosLeftStripe() {
   const toggleWorkspaces = usePanelStore((state) => state.toggleDesktopAgentList);
   const openHistory = useCallback(() => router.push(buildSessionsRoute()), []);
   const openSchedules = useCallback(() => router.push(buildSchedulesRoute()), []);
+  const { serverId } = useSosActiveWorkspace();
+  const openPlugins = useCallback(() => {
+    if (serverId) router.push(buildSettingsHostSectionRoute(serverId, "plugins"));
+  }, [serverId]);
 
   return (
     <View style={styles.stripe}>
@@ -82,48 +92,29 @@ export function SosLeftStripe() {
         active={pathname.includes("/schedules")}
         onPress={openSchedules}
       />
+      <View style={styles.grow} />
+      {serverId ? (
+        <StripeButton
+          icon={ThemedBlocks}
+          label="Plugins"
+          active={pathname.endsWith("/plugins")}
+          onPress={openPlugins}
+        />
+      ) : null}
+      <SidebarHelpMenu />
+      <View style={styles.bottomGap} />
     </View>
   );
 }
 
 type ExplorerView = "files" | "changes_tree";
 
-function useExplorerView(workspaceKey: string | null): ExplorerView | null {
-  return useWorkspaceLayoutStore((state) => {
-    if (!workspaceKey || !selectIsExplorerSidebarVisible(state, workspaceKey)) {
-      return null;
-    }
-    const paneId = selectExplorerSidebarPaneId(state, workspaceKey);
-    const focusedTabId = findFocusedTabId(state.layoutByWorkspace[workspaceKey]?.root, paneId);
-    if (focusedTabId?.includes("changes_tree")) return "changes_tree";
-    if (focusedTabId?.includes("files")) return "files";
-    return null;
-  });
-}
-
-function findFocusedTabId(node: SplitNode | undefined, paneId: string | null): string | null {
-  if (!node || !paneId) return null;
-  if (node.kind === "pane") {
-    return node.pane.id === paneId ? node.pane.focusedTabId : null;
-  }
-  for (const child of node.group.children) {
-    const found = findFocusedTabId(child, paneId);
-    if (found) return found;
-  }
-  return null;
-}
-
 /** Right edge: the focused workspace's Explorer views. Hidden off workspace routes. */
 export function SosRightStripe() {
-  const { selection } = useSosActiveWorkspace();
+  const { serverId, workspace, workspaceKey } = useSosActiveWorkspace();
   const dispatcher = useKeyboardActionDispatcher();
-  const workspaceKey = selection
-    ? buildWorkspaceTabPersistenceKey({
-        serverId: selection.serverId,
-        workspaceId: selection.workspaceId,
-      })
-    : null;
-  const activeView = useExplorerView(workspaceKey);
+  const activeView = useSosExplorerTabKind(workspaceKey);
+  const { isGit } = useSosCheckout(serverId, workspace?.workspaceDirectory ?? null);
 
   const toggleView = useCallback(
     (view: ExplorerView) => {
@@ -151,12 +142,14 @@ export function SosRightStripe() {
             active={activeView === "files"}
             onPress={toggleFiles}
           />
-          <StripeButton
-            icon={ThemedGitCompare}
-            label="Changes"
-            active={activeView === "changes_tree"}
-            onPress={toggleChanges}
-          />
+          {isGit ? (
+            <StripeButton
+              icon={ThemedGitCompare}
+              label="Changes"
+              active={activeView === "changes_tree"}
+              onPress={toggleChanges}
+            />
+          ) : null}
         </>
       ) : null}
     </View>
@@ -179,6 +172,12 @@ const styles = StyleSheet.create((theme) => ({
   },
   buttonHovered: {
     backgroundColor: theme.colors.interactionHighlight,
+  },
+  grow: {
+    flex: 1,
+  },
+  bottomGap: {
+    height: 6,
   },
   buttonActive: {
     backgroundColor: theme.colors.surface3,

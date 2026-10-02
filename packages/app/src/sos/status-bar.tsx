@@ -1,12 +1,14 @@
 import { ChevronRight, GitBranch, Server } from "lucide-react-native";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { useAggregatedAgents } from "@/hooks/use-aggregated-agents";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 import { useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import type { Theme } from "@/styles/theme";
 import { resolveAppVersion } from "@/utils/app-version";
 import { SOS_STATUS_BAR_HEIGHT } from "./metrics";
-import { useSosActiveWorkspace } from "./use-shell-data";
+import { useSosActiveWorkspace, useSosCheckout, useSosFocusedAgentId } from "./use-shell-data";
 
 const ThemedChevronRight = withUnistyles(ChevronRight);
 const ThemedGitBranch = withUnistyles(GitBranch);
@@ -17,9 +19,10 @@ const extraMutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundExtraM
 const MAX_USAGE_PROVIDERS = 2;
 
 export function SosStatusBar() {
-  const { workspace, serverId, host } = useSosActiveWorkspace();
+  const { workspace, serverId, host, workspaceKey } = useSosActiveWorkspace();
   const isConnected = useHostRuntimeIsConnected(serverId ?? "");
-  const branch = workspace?.gitRuntime?.currentBranch ?? null;
+  const { branch } = useSosCheckout(serverId, workspace?.workspaceDirectory ?? null);
+  const agent = useSosFocusedAgent(serverId, workspaceKey);
   const projectName = workspace?.projectCustomName || workspace?.projectDisplayName || null;
   const workspaceName = workspace ? workspace.title || workspace.name : null;
   const version = resolveAppVersion();
@@ -32,12 +35,21 @@ export function SosStatusBar() {
           <ThemedChevronRight size={12} uniProps={extraMutedIcon} />
         ) : null}
         {workspaceName ? (
-          <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
+          <Text style={[styles.crumb, !agent && styles.crumbCurrent]} numberOfLines={1}>
             {workspaceName}
           </Text>
         ) : null}
+        {workspaceName && agent ? (
+          <>
+            <ThemedChevronRight size={12} uniProps={extraMutedIcon} />
+            <Text style={[styles.crumb, styles.crumbCurrent]} numberOfLines={1}>
+              {agent.title || "New agent"}
+            </Text>
+          </>
+        ) : null}
       </View>
       <View style={styles.spacer} />
+      {agent?.status === "running" ? <WorkingItem startedAt={agent.startedAt} /> : null}
       <UsageItems serverId={serverId} />
       {branch ? (
         <View style={styles.item}>
@@ -59,6 +71,43 @@ export function SosStatusBar() {
           <Text style={styles.itemText}>{`Paseo ${version}`}</Text>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+function useSosFocusedAgent(serverId: string | null, workspaceKey: string | null) {
+  const agentId = useSosFocusedAgentId(workspaceKey);
+  const { agents } = useAggregatedAgents();
+  const agent = agentId
+    ? agents.find((candidate) => candidate.id === agentId && candidate.serverId === serverId)
+    : undefined;
+  if (!agent) return null;
+  const startedAt = agent.turn?.phase === "open" ? agent.turn.startedAt : null;
+  return { title: agent.title, status: agent.status, startedAt };
+}
+
+function formatElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  if (minutes >= 60) return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+}
+
+/** "Working · 2m 2s" for the focused agent's open turn, ticking once a second. */
+function WorkingItem({ startedAt }: { startedAt: Date | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!startedAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [startedAt]);
+  return (
+    <View style={styles.item}>
+      <View style={[styles.dot, styles.dotRunning]} />
+      <Text style={styles.itemText}>
+        {startedAt ? `Working · ${formatElapsed(now - startedAt.getTime())}` : "Working"}
+      </Text>
     </View>
   );
 }
@@ -144,6 +193,9 @@ const styles = StyleSheet.create((theme) => ({
     width: 6,
     height: 6,
     borderRadius: theme.borderRadius.full,
+  },
+  dotRunning: {
+    backgroundColor: theme.colors.statusDotRunning,
   },
   dotOk: {
     backgroundColor: theme.colors.statusDotSuccess,

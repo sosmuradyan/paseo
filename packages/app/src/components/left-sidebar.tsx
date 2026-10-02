@@ -51,6 +51,8 @@ import { buildSettingsAddHostRoute, buildSettingsRoute } from "@/utils/host-rout
 import { openHostOverview } from "@/navigation/settings-navigation";
 import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
+import { useSosShellEnabled } from "@/sos/shell-enabled";
+import { SosWorkspacesHeader } from "@/sos/workspaces-header";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 
 type SidebarTheme = ReturnType<typeof useUnistyles>["theme"];
@@ -643,6 +645,7 @@ function DesktopSidebar({
   active,
 }: DesktopSidebarProps) {
   const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
+  const sosShell = useSosShellEnabled();
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const setSidebarWidth = usePanelStore((state) => state.setSidebarWidth);
@@ -715,8 +718,12 @@ function DesktopSidebar({
     [active, resizeAnimatedStyle],
   );
   const desktopSidebarBorderStyle = useMemo(
-    () => [styles.desktopSidebarBorder, { flex: 1, paddingTop: insetsTop }],
-    [insetsTop],
+    () => [
+      styles.desktopSidebarBorder,
+      { flex: 1, paddingTop: insetsTop },
+      sosShell && { borderRightWidth: 0 }, // SOS: the island edge replaces the border
+    ],
+    [insetsTop, sosShell],
   );
   const sidebarHeaderGroupStyle = useMemo(
     () => [styles.sidebarHeaderGroup, ownsTopLeft && styles.sidebarHeaderGroupBelowChrome],
@@ -730,29 +737,38 @@ function DesktopSidebar({
       style={desktopSidebarStyle}
     >
       <View style={desktopSidebarBorderStyle}>
-        <View style={styles.sidebarDragArea}>
-          {ownsTopLeft || DEV_BUILD_LABEL ? (
-            <View style={styles.desktopChromeRow}>
+        {/* SOS: the WebStorm shell swaps nav rows, section label and footer for a tool-window header */}
+        {sosShell ? (
+          <SosWorkspacesHeader
+            onAddProject={handleOpenProject}
+            onImportSession={handleImportSession}
+            onAddHost={handleAddHost}
+          />
+        ) : (
+          <View style={styles.sidebarDragArea}>
+            {ownsTopLeft || DEV_BUILD_LABEL ? (
+              <View style={styles.desktopChromeRow}>
+                <TitlebarDragRegion />
+                {DEV_BUILD_LABEL ? (
+                  <View
+                    pointerEvents="none"
+                    style={styles.devBuildBadge}
+                    testID="dev-build-label"
+                    accessibilityLabel={`Development build: ${DEV_BUILD_LABEL}`}
+                  >
+                    <GitBranch size={12} color={theme.colors.accentForeground} />
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.devBuildBadgeText}>
+                      {DEV_BUILD_LABEL}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
               <TitlebarDragRegion />
-              {DEV_BUILD_LABEL ? (
-                <View
-                  pointerEvents="none"
-                  style={styles.devBuildBadge}
-                  testID="dev-build-label"
-                  accessibilityLabel={`Development build: ${DEV_BUILD_LABEL}`}
-                >
-                  <GitBranch size={12} color={theme.colors.accentForeground} />
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.devBuildBadgeText}>
-                    {DEV_BUILD_LABEL}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : (
-            <TitlebarDragRegion />
-          )}
-          <SidebarNavRows style={sidebarHeaderGroupStyle} />
-        </View>
+            )}
+            <SidebarNavRows style={sidebarHeaderGroupStyle} />
+          </View>
+        )}
 
         {isInitialLoad && !hasActiveHostFilter ? (
           <SidebarAgentListSkeleton />
@@ -773,21 +789,23 @@ function DesktopSidebar({
             onRefresh={handleRefresh}
             onAddProject={handleOpenProject}
             onImportSession={handleImportSession}
-            listHeaderComponent={workspacesSectionHeaderElement}
+            listHeaderComponent={sosShell ? null : workspacesSectionHeaderElement}
           />
         )}
 
         <SidebarCalloutSlot />
 
-        <SidebarFooter
-          theme={theme}
-          handleOpenProject={handleOpenProject}
-          handleImportSession={handleImportSession}
-          handleSettings={handleSettings}
-          labels={labels}
-          handleAddHost={handleAddHost}
-          handleOpenHostSettings={handleOpenHostSettings}
-        />
+        {sosShell ? null : (
+          <SidebarFooter
+            theme={theme}
+            handleOpenProject={handleOpenProject}
+            handleImportSession={handleImportSession}
+            handleSettings={handleSettings}
+            labels={labels}
+            handleAddHost={handleAddHost}
+            handleOpenHostSettings={handleOpenHostSettings}
+          />
+        )}
 
         <SidebarResizeHandle
           edge="right"

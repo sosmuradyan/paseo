@@ -35,7 +35,9 @@ export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
     playSound: true,
   },
   daemon: {
-    manageBuiltInDaemon: true,
+    // SOS: this build runs beside the official app, which owns the daemon on 6767. Managing
+    // it here would restart it on every version mismatch.
+    manageBuiltInDaemon: false,
     keepRunningAfterQuit: false,
   },
 };

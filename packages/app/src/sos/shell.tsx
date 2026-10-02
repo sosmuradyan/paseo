@@ -1,19 +1,31 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { WindowChromeRootRegion } from "@/utils/desktop-window";
+import { SOS_ISLAND_GAP } from "./metrics";
+import { SosShellCss } from "./shell-css";
 import { SosStatusBar } from "./status-bar";
 import { SosLeftStripe, SosRightStripe } from "./tool-stripes";
 import { SosToolbar } from "./toolbar";
+import { useSosActiveWorkspace, useSosExplorerTabKind } from "./use-shell-data";
 
 /**
  * The WebStorm frame: main toolbar on top, tool-window stripes on both edges, status
  * bar at the bottom. `children` is upstream's sidebar + content row, untouched. The
  * toolbar owns both top window corners, so nothing below it pads for traffic lights.
+ * `data-sos-shell` scopes the shell stylesheet; `data-sos-explorer-tab` tells it which
+ * Explorer tab is focused, since upstream exposes that only through generated classes.
  */
 export function SosShell({ children }: { children: ReactNode }) {
+  const { workspaceKey } = useSosActiveWorkspace();
+  const explorerTab = useSosExplorerTabKind(workspaceKey);
+  const dataSet = useMemo(
+    () => ({ sosShell: "true", sosExplorerTab: explorerTab ?? "none" }),
+    [explorerTab],
+  );
   return (
-    <View style={styles.frame}>
+    <View style={styles.frame} dataSet={dataSet}>
+      <SosShellCss />
       <SosToolbar />
       <WindowChromeRootRegion corners="none">
         <View style={styles.body}>
@@ -41,5 +53,6 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
     flexDirection: "row",
+    marginHorizontal: SOS_ISLAND_GAP,
   },
 }));

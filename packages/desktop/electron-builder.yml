@@ -1,11 +1,10 @@
 npmRebuild: false
-appId: sh.paseo.desktop
+# SOS: a separate app beside the official Paseo: its own bundle id and display name, and no
+# paseo:// handler, so links stay with the official app. productName stays "Paseo" because
+# the after-pack scripts locate Paseo.app; the install script copies it as "Paseo Sos.app".
+appId: sh.paseo.desktop.sos
 productName: Paseo
 executableName: Paseo
-protocols:
-  - name: Paseo agent link
-    schemes:
-      - paseo
 afterPack: ./scripts/after-pack.js
 afterSign: ./scripts/after-sign.js
 directories:
@@ -40,6 +39,9 @@ mac:
   minimumSystemVersion: "13.0.0"
   category: public.app-category.developer-tools
   icon: assets/icon.icns
+  extendInfo:
+    CFBundleName: Paseo Sos
+    CFBundleDisplayName: Paseo Sos
   hardenedRuntime: true
   notarize: true
   entitlements: build/entitlements.mac.plist
