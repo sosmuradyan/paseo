@@ -156,6 +156,17 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   border-left-color: transparent !important;
 }
 
+/* Window dragging: Electron subtracts every no-drag box from the toolbar's drag region, even
+   boxes scrolled out of view above a list. The chat and the workspace list scroll their content
+   up behind the toolbar and tab row, and their buttons (no-drag via index.html) killed dragging
+   there. Nothing inside these lists sits under a drag region, so they never need no-drag. */
+[data-testid="agent-chat-scroll"],
+[data-testid="agent-chat-scroll"] *,
+[data-testid="sidebar-project-workspace-list-scroll"],
+[data-testid="sidebar-project-workspace-list-scroll"] * {
+  -webkit-app-region: initial !important;
+}
+
 [data-sos-shell] ::selection { background: var(--sos-selection); }
 [data-sos-shell] ::-webkit-scrollbar { width: 10px; height: 10px; }
 [data-sos-shell] ::-webkit-scrollbar-track { background: transparent; }
