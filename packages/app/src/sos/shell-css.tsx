@@ -114,7 +114,10 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   border-radius: 10px !important;
 }
 [data-sos-shell] [data-testid="message-input-root"] > div:first-child:focus-within {
-  border-color: var(--sos-accent) !important;
+  border-color: var(--sos-composer-accent) !important;
+}
+[data-sos-shell] [data-testid="message-input-root"] [aria-label="Send message"] {
+  background-color: var(--sos-composer-accent) !important;
 }
 
 /* Your messages: one full-width filled block, no border; long ones fold (message.tsx). */
@@ -178,6 +181,10 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
 }
 `;
 
+// Sos keeps the message box edge and send button on JetBrains' blue-90 while the rest of
+// Islands Dark uses the lighter #6FA4FF accent from the paseo-sos plugin.
+const COMPOSER_ACCENT_BY_ACCENT: Record<string, string> = { "#6FA4FF": "#538AF9" };
+
 interface ShellCssVars {
   surface: string;
   border: string;
@@ -206,6 +213,7 @@ function ShellCssVarsWriter({ surface, border, accent, foreground, muted }: Shel
     root.setProperty("--sos-inline", mixHex(surface, foreground, 0.03));
     root.setProperty("--sos-border", border);
     root.setProperty("--sos-accent", accent);
+    root.setProperty("--sos-composer-accent", COMPOSER_ACCENT_BY_ACCENT[accent] ?? accent);
     root.setProperty("--sos-muted", muted);
     root.setProperty("--sos-scroll-thumb", mixHex(surface, foreground, 0.16));
   }, [accent, border, foreground, muted, surface]);
