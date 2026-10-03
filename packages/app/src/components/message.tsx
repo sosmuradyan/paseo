@@ -3024,8 +3024,9 @@ export const ExpandableBadge = memo(function ExpandableBadge({
   const shimmerSecondaryTextStyle = useMemo(
     () => [
       expandableBadgeStylesheet.secondaryLabel,
-      monospaceSecondary && expandableBadgeStylesheet.secondaryLabelMono,
       expandableBadgeStylesheet.shimmerText,
+      // After shimmerText, whose base font size would make the mono overlay wider than the text.
+      monospaceSecondary && expandableBadgeStylesheet.secondaryLabelMono,
       shimmerSecondaryStyle,
     ],
     [monospaceSecondary, shimmerSecondaryStyle],
