@@ -132,8 +132,9 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   mask-image: linear-gradient(#000 70%, transparent);
 }
 
-/* Inline code: a quiet box with a hairline edge instead of a heavy grey fill. */
-[data-sos-shell] [data-paseo-markdown-tag="code"] {
+/* Inline code: a quiet box with a hairline edge instead of a heavy grey fill. Code blocks tag
+   their text "code" too, so skip anything inside a "pre" or it draws a box inside the block. */
+[data-sos-shell] [data-paseo-markdown-tag="code"]:not([data-paseo-markdown-tag="pre"] *) {
   background-color: color-mix(in srgb, var(--sos-foreground) 7%, var(--sos-island)) !important;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sos-foreground) 12%, var(--sos-island));
   border-radius: 4px !important;
