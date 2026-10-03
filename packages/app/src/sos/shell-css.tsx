@@ -15,9 +15,6 @@ import { SOS_ISLAND_RADIUS, SOS_TOOLBAR_HEIGHT } from "./metrics";
 // `!important` only where upstream sets the same property inline.
 const STYLE_ID = "sos-shell-css";
 
-const CHEVRON_MASK =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")";
-
 const WS_ROW = '[data-sos-shell] [data-testid^="sidebar-workspace-row-"]';
 const PROJECT_ROW = '[data-sos-shell] [data-testid^="sidebar-project-row-"]';
 const PROJECT_GROUP =
@@ -25,8 +22,7 @@ const PROJECT_GROUP =
 const HAS_CHILD_ROWS =
   ':has([data-testid^="sidebar-workspace-row-"], [data-testid^="sidebar-project-new-workspace-row-"])';
 const EXPLORER_TAB = '[data-sos-shell] [data-testid^="explorer-sidebar-tab-"]:is(button)';
-// JetBrains marks the tool window holding keyboard focus: its stripe button turns solid accent
-// and its selected row keeps the accent selection. Elsewhere the selection goes neutral.
+// JetBrains marks the tool window holding keyboard focus: its stripe button turns solid accent.
 const WORKSPACES_FOCUSED =
   '[data-sos-shell]:has([data-testid="sidebar-project-workspace-list-scroll"]:focus-within)';
 const FOCUSED_STRIPE = `${WORKSPACES_FOCUSED} [data-sos-stripe="workspaces"][data-sos-stripe-active="true"]`;
@@ -42,40 +38,21 @@ const RULES = `
 
 ${WS_ROW} {
   min-height: 26px !important;
-  padding: 3px 8px 3px 22px !important;
+  padding: 3px 8px 3px 10px !important;
   margin-bottom: 0 !important;
   border-radius: 5px !important;
   gap: 2px !important;
-}
-${WS_ROW}[aria-selected="true"] { background-color: var(--sos-selection-inactive) !important; }
-${WORKSPACES_FOCUSED} [data-testid^="sidebar-workspace-row-"][aria-selected="true"] {
-  background-color: var(--sos-selection) !important;
 }
 ${FOCUSED_STRIPE} { background-color: var(--sos-accent) !important; }
 :is(${FOCUSED_STRIPE}) svg [stroke]:not([stroke="none"]) { stroke: #ffffff; }
 ${WS_ROW}[aria-selected="true"] div[dir="auto"] { opacity: 1 !important; }
 
+/* Upstream's project icon turns into the expand chevron on hover; no chevron of our own. */
 ${PROJECT_ROW} {
   min-height: 26px !important;
-  padding: 3px 8px 3px 20px !important;
+  padding: 3px 8px !important;
   margin-bottom: 0 !important;
   border-radius: 5px !important;
-}
-${PROJECT_ROW}::before {
-  content: "";
-  position: absolute;
-  left: 3px;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  margin-top: -7px;
-  background-color: var(--sos-muted);
-  -webkit-mask: ${CHEVRON_MASK} center / 14px 14px no-repeat;
-  mask: ${CHEVRON_MASK} center / 14px 14px no-repeat;
-  transition: transform 120ms ease-out;
-}
-${PROJECT_GROUP}:not(${HAS_CHILD_ROWS}) [data-testid^="sidebar-project-row-"]::before {
-  transform: rotate(-90deg);
 }
 ${PROJECT_ROW} > div > div:last-child > div[dir="auto"] {
   color: var(--sos-foreground) !important;
@@ -86,7 +63,7 @@ ${PROJECT_GROUP}${HAS_CHILD_ROWS} { padding-bottom: 6px !important; }
 [data-sos-shell] [data-testid^="sidebar-project-show-more-"],
 [data-sos-shell] [data-testid^="sidebar-project-new-workspace-row-"] {
   min-height: 26px !important;
-  padding: 3px 8px 3px 22px !important;
+  padding: 3px 8px 3px 10px !important;
   margin-bottom: 0 !important;
   border-radius: 5px !important;
 }
@@ -202,8 +179,6 @@ function ShellCssVarsWriter({ surface, border, accent, foreground, muted }: Shel
     const root = document.documentElement.style;
     // JetBrains selection-bg-active (#2A4371) is the accent at ~30% over the island.
     root.setProperty("--sos-selection", mixHex(surface, accent, 0.3));
-    // JetBrains selection-bg-inactive: a neutral lift for the selection outside focus.
-    root.setProperty("--sos-selection-inactive", mixHex(surface, foreground, 0.08));
     root.setProperty("--sos-foreground", foreground);
     root.setProperty("--sos-island", surface);
     // JetBrains editor-bg-inline (#212326): a 3% lift off the island.

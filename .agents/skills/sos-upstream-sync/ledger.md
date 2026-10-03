@@ -36,6 +36,8 @@ Code in `packages/app/src/sos/`. Switched on by `sos/shell-enabled.ts` (Electron
   - Status bar (`status-bar.tsx`): breadcrumb, working timer, usage meters, host, version.
     Drop parts upstream shows elsewhere.
   - Islands, tab pills, project glow (`island.tsx`, `tab-styles.ts`, `shell-css.tsx`, `color.ts`).
+  - Sidebar rows (`shell-css.tsx`): compact height only. Upstream's hover chevron on the project
+    icon and upstream's selected-row color stay; we add no chevron and no selection fill.
 - `shell-css.tsx` keys on upstream test IDs. Check each still exists after a rebase:
   `agent-chat-scroll`, `explorer-sidebar-tab-*` (`files`, `changes_tree`, `pull_request`),
   `message-input-root`, `sidebar-project-new-workspace-row-*`, `sidebar-project-row-*`,
