@@ -29,10 +29,7 @@ const EXPLORER_TAB = '[data-sos-shell] [data-testid^="explorer-sidebar-tab-"]:is
 // and its selected row keeps the accent selection. Elsewhere the selection goes neutral.
 const WORKSPACES_FOCUSED =
   '[data-sos-shell]:has([data-testid="sidebar-project-workspace-list-scroll"]:focus-within)';
-const EXPLORER_FOCUSED =
-  '[data-sos-shell]:has([data-testid="workspace-explorer-sidebar"]:focus-within)';
-const FOCUSED_STRIPE = `${WORKSPACES_FOCUSED} [data-sos-stripe="workspaces"][data-sos-stripe-active="true"],
-${EXPLORER_FOCUSED} [data-sos-stripe="explorer"][data-sos-stripe-active="true"]`;
+const FOCUSED_STRIPE = `${WORKSPACES_FOCUSED} [data-sos-stripe="workspaces"][data-sos-stripe-active="true"]`;
 
 const RULES = `
 /* Upstream panes paint the frame color as opaque squares behind the islands, so the glow stays
@@ -151,7 +148,6 @@ ${EXPLORER_TAB} div[dir="auto"] { color: var(--sos-muted) !important; font-weigh
   stop-color: color-mix(in srgb, var(--sos-accent) 27%, var(--sos-island));
 }
 
-[data-sos-toolbar] [data-testid="workspace-explorer-toggle"] { display: none !important; }
 [data-sos-toolbar] :has(> [data-testid="workspace-open-in-editor-primary"]) {
   border-color: transparent !important;
 }

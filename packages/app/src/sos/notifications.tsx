@@ -1,5 +1,5 @@
 import { Bell } from "lucide-react-native";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
@@ -27,8 +27,8 @@ function triggerStyle({ hovered }: { hovered?: boolean }) {
 }
 
 /**
- * JetBrains Notifications tool window button, top of the right stripe: agents that asked
- * for attention, newest first. Selecting one opens its tab.
+ * JetBrains Notifications button in the main toolbar: agents that asked for attention,
+ * newest first. Selecting one opens its tab.
  */
 export function SosNotificationsButton() {
   const { agents } = useAggregatedAgents();
@@ -45,41 +45,49 @@ export function SosNotificationsButton() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger style={triggerStyle} accessibilityLabel="Notifications">
-        <ThemedBell size={18} uniProps={mutedIcon} />
+        <ThemedBell size={16} uniProps={mutedIcon} />
         {pending.length > 0 ? <View style={styles.dot} /> : null}
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="left" align="start" offset={6} width={320}>
+      <DropdownMenuContent side="bottom" align="end" offset={6} width={320}>
         <DropdownMenuLabel>
           {pending.length > 0 ? "Needs your attention" : "Nothing needs your attention"}
         </DropdownMenuLabel>
         {pending.map((agent) => (
-          <DropdownMenuItem
-            key={`${agent.serverId}:${agent.id}`}
-            description={
-              agent.attentionReason ? ATTENTION_LABELS[agent.attentionReason] : undefined
-            }
-            onSelect={() =>
-              navigateToWorkspace({
-                serverId: agent.serverId,
-                workspaceId: agent.workspaceId as string,
-                target: { kind: "agent", agentId: agent.id },
-              })
-            }
-          >
-            {agent.title || "Untitled agent"}
-          </DropdownMenuItem>
+          <NotificationItem key={`${agent.serverId}:${agent.id}`} agent={agent} />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
+type AttentionAgent = ReturnType<typeof useAggregatedAgents>["agents"][number];
+
+function NotificationItem({ agent }: { agent: AttentionAgent }) {
+  const handleSelect = useCallback(
+    () =>
+      navigateToWorkspace({
+        serverId: agent.serverId,
+        workspaceId: agent.workspaceId as string,
+        target: { kind: "agent", agentId: agent.id },
+      }),
+    [agent.id, agent.serverId, agent.workspaceId],
+  );
+  return (
+    <DropdownMenuItem
+      description={agent.attentionReason ? ATTENTION_LABELS[agent.attentionReason] : undefined}
+      onSelect={handleSelect}
+    >
+      {agent.title || "Untitled agent"}
+    </DropdownMenuItem>
+  );
+}
+
 const styles = StyleSheet.create((theme) => ({
   button: {
     position: "relative",
-    width: 30,
-    height: 30,
-    borderRadius: theme.borderRadius.md,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -88,8 +96,8 @@ const styles = StyleSheet.create((theme) => ({
   },
   dot: {
     position: "absolute",
-    top: 5,
-    right: 5,
+    top: 4,
+    right: 4,
     width: 7,
     height: 7,
     borderRadius: theme.borderRadius.full,

@@ -16,6 +16,7 @@ import { buildSettingsRoute } from "@/utils/host-routes";
 import { projectIconPlaceholderLabelFromDisplayName } from "@/utils/project-display-name";
 import { useSosHeaderSlotRef } from "./header-slot";
 import { SOS_TOOLBAR_HEIGHT } from "./metrics";
+import { SosNotificationsButton } from "./notifications";
 import { useSosProjectGlow } from "./shell-css";
 import {
   useSosActiveWorkspace,
@@ -34,8 +35,9 @@ const foregroundIcon = (theme: Theme) => ({ color: theme.colors.foreground });
 
 /**
  * JetBrains main toolbar: project and branch widgets on the left, the agent run widget,
- * New agent, Search and Settings on the right. Notifications live on the right stripe. The right slot also receives
- * the focused workspace's own header actions (scripts, open in editor, plugin buttons).
+ * New agent, Notifications, Search and Settings on the right. The right slot also receives
+ * the focused workspace's own header actions (scripts, open in editor, Explorer toggle,
+ * plugin buttons).
  */
 export function SosToolbar() {
   const rightSlotRef = useSosHeaderSlotRef("right");
@@ -61,6 +63,7 @@ export function SosToolbar() {
       <AgentStatusWidget />
       <View ref={rightSlotRef} dataSet={TOOLBAR_DATA_SET} style={styles.rightSlot} />
       {selection ? <NewAgentButton /> : null}
+      <SosNotificationsButton />
       <IconButton label="Search" onPress={openSearch}>
         <ThemedSearch size={16} uniProps={mutedIcon} />
       </IconButton>
@@ -126,31 +129,24 @@ function ProjectWidget({ serverId, workspaceId }: { serverId: string; workspaceI
   );
   const renderOption = useCallback<NonNullable<ComboboxProps["renderOption"]>>(
     ({ option, selected, active, onPress }) => (
-      <ComboboxItem
+      <ProjectOption
+        id={option.id}
         label={option.label}
         selected={selected}
         active={active}
         onPress={onPress}
-        leadingSlot={
-          <ProjectIconView
-            iconDataUri={null}
-            initial={projectBadgeLabel(option.label, 1)}
-            projectViewKey={option.id}
-            size={16}
-            textStyle={styles.badgeTextSmall}
-          />
-        }
       />
     ),
     [],
   );
+  const openSwitcher = useCallback(() => setOpen(true), []);
 
   if (!current) return null;
   return (
     <View ref={anchorRef} collapsable={false}>
       <Pressable
         accessibilityLabel={`Project ${current.projectName}`}
-        onPress={() => setOpen(true)}
+        onPress={openSwitcher}
         style={widgetStyle}
       >
         <ProjectIconView
@@ -181,6 +177,42 @@ function ProjectWidget({ serverId, workspaceId }: { serverId: string; workspaceI
         renderOption={renderOption}
       />
     </View>
+  );
+}
+
+function ProjectOption({
+  id,
+  label,
+  selected,
+  active,
+  onPress,
+}: {
+  id: string;
+  label: string;
+  selected: boolean;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const leadingSlot = useMemo(
+    () => (
+      <ProjectIconView
+        iconDataUri={null}
+        initial={projectBadgeLabel(label, 1)}
+        projectViewKey={id}
+        size={16}
+        textStyle={styles.badgeTextSmall}
+      />
+    ),
+    [id, label],
+  );
+  return (
+    <ComboboxItem
+      label={label}
+      selected={selected}
+      active={active}
+      onPress={onPress}
+      leadingSlot={leadingSlot}
+    />
   );
 }
 

@@ -5,13 +5,13 @@ import { WindowChromeRootRegion } from "@/utils/desktop-window";
 import { SOS_ISLAND_GAP } from "./metrics";
 import { SosShellCss } from "./shell-css";
 import { SosStatusBar } from "./status-bar";
-import { SosLeftStripe, SosRightStripe } from "./tool-stripes";
+import { SosLeftStripe } from "./tool-stripes";
 import { SosToolbar } from "./toolbar";
 import { useSosActiveWorkspace, useSosExplorerTabKind } from "./use-shell-data";
 
 /**
- * The WebStorm frame: main toolbar on top, tool-window stripes on both edges, status
- * bar at the bottom. `children` is upstream's sidebar + content row, untouched. The
+ * The WebStorm frame: main toolbar on top, the tool-window stripe on the left edge, status
+ * bar at the bottom. No right stripe: Notifications and the Explorer toggle sit in the toolbar. `children` is upstream's sidebar + content row, untouched. The
  * toolbar owns both top window corners, so nothing below it pads for traffic lights.
  * `data-sos-shell` scopes the shell stylesheet; `data-sos-explorer-tab` tells it which
  * Explorer tab is focused, since upstream exposes that only through generated classes.
@@ -31,7 +31,6 @@ export function SosShell({ children }: { children: ReactNode }) {
         <View style={styles.body}>
           <SosLeftStripe />
           <View style={styles.content}>{children}</View>
-          <SosRightStripe />
         </View>
         <SosStatusBar />
       </WindowChromeRootRegion>
